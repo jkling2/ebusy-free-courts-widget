@@ -32,10 +32,13 @@ If your phone has no internet connection or if the data could not be loaded from
 </br>
 </br>
 </br>
+</br>
 
 * Choose script of step #4.
 * Select when interacting "Run Script" or "Open URL".
   * In case "Open URL" was selected: Provide the URL of your club's eBuSy 8 Buchungssystem (e. g. ```https://demo8.ebusy.de/lite-module/920```)
 * Provide 2 parameters separated by comma: first the URL of your club's eBuSy 8 Buchungssystem and then the amount of courts that can be booked (e. g. ```https://demo8.ebusy.de/lite-module/920,6```)
+
+</br>
 
 **Enjoy the widget!**
