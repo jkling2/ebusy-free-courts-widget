@@ -23,8 +23,7 @@ if(!fm.fileExists(dir)){
 	fm.createDirectory(dir)
 }
 const currentDate = new Date()
-const month = (currentDate.getMonth()+1) < 10 ? "0" + (currentDate.getMonth()+1) : (currentDate.getMonth()+1)
-const date = month+'/'+currentDate.getDate()+'/'+currentDate.getFullYear()
+const date = currentDate.toLocaleDateString('en-US', { year: "numeric", month: "2-digit", day: "2-digit", })
 // load logo from file (if not present, download first)
 if (!fm.fileExists(pathImg)) {
 	let reqImg = new Request(urlSplit[0]+'//'+urlSplit[2]+'/dynamic-resources/logo')
@@ -37,22 +36,25 @@ if (!fm.fileExists(pathImg)) {
 const logo = fm.readImage(pathImg)
 // request to get reservations
 let req = new Request(url+"?timestamp=&currentDate="+date)
-req.headers = {
-        "Accept": "application/json,*/*"
-    }
+req.headers = { "Accept": "application/json,*/*" }
 let freeCourts = -1
+var reservations = JSON.parse('{}')
 try {
+	// load data
 	bookingDataJSON = await req.loadJSON()
-	var reservations
-	try {
-		// try reading data
-		reservations = bookingDataJSON.reservations
-		fm.writeString(pathData, JSON.stringify(bookingDataJSON))
-	} catch(e) {
-		// could not read JSON data => read last data from file
-		console.log('Error: ' + e.message)
-		reservations = JSON.parse(fm.readString(pathData))
-	} finally {
+	// get loaded data
+	reservations = bookingDataJSON.reservations
+	// save data to file
+	fm.writeString(pathData, JSON.stringify(reservations))
+} catch(e) {
+	// could not load data due to no internet connection or could not read JSON data
+	console.log('Error: ' + e.message)
+	if (fm.modificationDate(pathData)> new Date(currentDate.getTime() - 10 * 60000)) {
+		console.log('Reading data from file')
+		reservations = JSON.parse(fm.readString(pathData))		
+	}
+} finally {
+	if (JSON.stringify(reservations) != '{}') {
 		// calculate free courts
 		freeCourts = amountCourts
 		for (let reservationIdx in reservations) {	
@@ -60,14 +62,11 @@ try {
 			let fromTime = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), reservation.fromTime.split(":")[0], reservation.fromTime.split(":")[1])
 			let toTime = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), reservation.toTime.split(":")[0], reservation.toTime.split(":")[1])
 			if (fromTime <= currentDate && currentDate <= toTime) {
- 				freeCourts--
+				freeCourts--
 				console.log(`Found booked Court: ${reservation.court} for ${reservation.text} ${reservation.info}`)
 			}
 		}
 	}
-} catch(e) {
-	// could not load data due to no internet connection
-	console.log('Error: ' + e.message)
 }
 // build widget
 let widget = new ListWidget()
@@ -90,7 +89,7 @@ if (freeCourts >= 0) {
 	  tennisBallsText += "🎾"
 	} 
 	let tennisBalls = widget.addText(tennisBallsText)
-	tennisBalls.font = Font.mediumSystemFont(Math.ceil(33 - (20 * (1 - ((21 - freeCourts) * (21 - freeCourts)) / (21 * 21)))))
+	tennisBalls.font = Font.mediumSystemFont(Math.ceil(33 - ( 22 * (1 - ((21 - freeCourts)*(21 - freeCourts)) / (21*21)))))
 	tennisBalls.centerAlignText()
 } else {
 	// data could not be read
